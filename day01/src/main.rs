@@ -3,7 +3,7 @@ extern crate day01;
 use std::fs::File;
 use std::io::prelude::*;
 
-use day01::solve_captcha;
+use day01::*;
 
 fn main() {
     let mut file = File::open("input.txt").expect("file not found");
@@ -13,5 +13,13 @@ fn main() {
         "error reading file",
     );
 
-    println!("{}", solve_captcha(&contents.trim()));
+    println!(
+        "First captcha solution: {}",
+        solve_captcha(&contents.trim())
+    );
+
+    println!(
+        "Second captcha solution: {}",
+        solve_second_captcha(&contents.trim())
+    );
 }
