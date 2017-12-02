@@ -20,4 +20,5 @@ fn main() {
     }
 
     println!("Checksum: {}", calculate_checksum(&rows));
+    println!("Second checksum: {}", calculate_second_checksum(&rows));
 }
