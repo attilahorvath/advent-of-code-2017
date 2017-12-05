@@ -12,4 +12,9 @@ fn main() {
         .collect::<Vec<_>>();
 
     println!("Valid passwords: {}", count_valid_passwords(&passwords));
+
+    println!(
+        "Valid passwords without anagrams: {}",
+        count_passwords_without_anagrams(&passwords)
+    );
 }
