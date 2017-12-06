@@ -18,5 +18,8 @@ fn main() {
         .map(|i| i.parse().unwrap_or(0))
         .collect::<Vec<_>>();
 
-    println!("Max steps: {}", max_steps(&mut blocks));
+    let max_steps_and_cycle_length = max_steps_and_cycle_length(&mut blocks);
+
+    println!("Max steps: {}", max_steps_and_cycle_length.0);
+    println!("Cycle length: {}", max_steps_and_cycle_length.1);
 }
