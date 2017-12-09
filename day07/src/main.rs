@@ -20,4 +20,6 @@ fn main() {
     } else {
         println!("No head found");
     }
+
+    println!("Balanced weight: {}", tower.balanced_weight());
 }
