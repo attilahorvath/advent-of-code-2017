@@ -153,14 +153,14 @@ mod tests {
     fn parse_simple_program() {
         let program = Program::new("abcd", 10, &[]);
 
-        assert_eq!(Ok(program), "abcd (10)".parse::<Program>());
+        assert_eq!(Ok(program), "abcd (10)".parse());
     }
 
     #[test]
     fn parse_program_with_one_child() {
         let program = Program::new("abcd", 10, &["eeee"]);
 
-        assert_eq!(Ok(program), "abcd (10) -> eeee".parse::<Program>());
+        assert_eq!(Ok(program), "abcd (10) -> eeee".parse());
     }
 
     #[test]
@@ -169,7 +169,7 @@ mod tests {
 
         assert_eq!(
             Ok(program),
-            "abcd (10) -> eeee, xyzw, ijkl".parse::<Program>()
+            "abcd (10) -> eeee, xyzw, ijkl".parse()
         );
     }
 
