@@ -20,6 +20,45 @@ impl Program {
             children: children.iter().map(|c| c.to_string()).collect(),
         }
     }
+
+    fn subtower_weight(&self, tower: &Tower) -> u32 {
+        self.weight +
+            self.children
+                .iter()
+                .map(|c| tower.get(c).map(|p| p.subtower_weight(tower)).unwrap())
+                .sum::<u32>()
+    }
+
+    fn balanced_weight(&self, tower: &Tower) -> u32 {
+        if self.children.is_empty() {
+            return 0;
+        }
+
+        let weights = self.children
+            .iter()
+            .map(|p| {
+                (
+                    tower.get(p).unwrap(),
+                    tower.get(p).unwrap().subtower_weight(tower),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let min_weight = weights.iter().min_by_key(|w| w.1).unwrap();
+        let max_weight = weights.iter().max_by_key(|w| w.1).unwrap();
+
+        if min_weight.1 == max_weight.1 {
+            return 0;
+        }
+
+        let balanced_subweight = max_weight.0.balanced_weight(tower);
+
+        if balanced_subweight > 0 {
+            return balanced_subweight;
+        }
+
+        max_weight.0.weight - (max_weight.1 - min_weight.1)
+    }
 }
 
 impl FromStr for Program {
@@ -75,12 +114,24 @@ impl Tower {
         self.programs.insert(program.name.clone(), program);
     }
 
+    pub fn get(&self, p: &str) -> Option<&Program> {
+        self.programs.get(p)
+    }
+
     pub fn head(&self) -> Option<&Program> {
         self.programs.values().find(|p| {
             self.programs.values().find(
                 |i| i.children.contains(&p.name),
             ) == None
         })
+    }
+
+    pub fn balanced_weight(&self) -> u32 {
+        if let Some(h) = self.head() {
+            h.balanced_weight(self)
+        } else {
+            0
+        }
     }
 }
 
@@ -122,8 +173,7 @@ mod tests {
         );
     }
 
-    #[test]
-    fn find_head_of_tower() {
+    fn build_tower() -> Tower {
         let mut tower = Tower::new();
 
         tower.add("pbga (66)".parse().unwrap());
@@ -140,6 +190,20 @@ mod tests {
         tower.add("gyxo (61)".parse().unwrap());
         tower.add("cntj (57)".parse().unwrap());
 
+        tower
+    }
+
+    #[test]
+    fn find_head_of_tower() {
+        let tower = build_tower();
+
         assert_eq!("tknk", tower.head().unwrap().name);
+    }
+
+    #[test]
+    fn find_balanced_weight() {
+        let tower = build_tower();
+
+        assert_eq!(60, tower.balanced_weight());
     }
 }
