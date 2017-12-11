@@ -13,11 +13,5 @@ fn main() {
         "error reading file",
     );
 
-    let lengths = contents
-        .split(',')
-        .map(|i| i.trim().parse().unwrap_or(0))
-        .collect::<Vec<_>>();
-
-    let hash = hash(256, &lengths);
-    println!("Product of first two elements: {}", hash[0] * hash[1]);
+    println!("Hash: {}", hash(contents.trim().as_bytes()));
 }
