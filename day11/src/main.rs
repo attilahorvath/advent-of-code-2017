@@ -24,4 +24,9 @@ fn main() {
     }
 
     println!("Distance from origin: {}", coords.distance_from_origin());
+
+    println!(
+        "Max distance from origin: {}",
+        coords.max_distance_from_origin()
+    );
 }
