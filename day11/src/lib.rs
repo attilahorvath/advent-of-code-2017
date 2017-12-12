@@ -34,11 +34,17 @@ pub struct HexCoords {
     x: i32,
     y: i32,
     z: i32,
+    max_distance: u32,
 }
 
 impl HexCoords {
     pub fn new() -> Self {
-        HexCoords { x: 0, y: 0, z: 0 }
+        HexCoords {
+            x: 0,
+            y: 0,
+            z: 0,
+            max_distance: 0,
+        }
     }
 
     pub fn take_step(&mut self, step: Direction) {
@@ -68,6 +74,12 @@ impl HexCoords {
                 self.y += 1;
             }
         }
+
+        let current_distance = self.distance_from_origin();
+
+        if current_distance > self.max_distance {
+            self.max_distance = current_distance;
+        }
     }
 
     pub fn distance_from_origin(&self) -> u32 {
@@ -76,6 +88,10 @@ impl HexCoords {
             .map(|i| i.abs() as u32)
             .max()
             .unwrap()
+    }
+
+    pub fn max_distance_from_origin(&self) -> u32 {
+        self.max_distance
     }
 }
 
