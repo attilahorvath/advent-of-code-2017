@@ -15,4 +15,5 @@ fn main() {
     }
 
     println!("Nodes in group 0: {}", graph.nodes_in_group(0).len());
+    println!("Groups in the graph: {}", graph.groups().len());
 }

@@ -40,18 +40,20 @@ impl Graph {
     }
 
     fn link_nodes(&mut self, a: u32, b: u32) {
-        if a == b {
-            return;
-        }
-
         {
             let node = self.nodes.entry(a).or_insert(Node::new());
-            (*node).neighbours.insert(b);
+
+            if a != b {
+                (*node).neighbours.insert(b);
+            }
         }
 
         {
             let node = self.nodes.entry(b).or_insert(Node::new());
-            (*node).neighbours.insert(a);
+
+            if a != b {
+                (*node).neighbours.insert(a);
+            }
         }
     }
 
@@ -75,6 +77,23 @@ impl Graph {
         for &n in &node.neighbours {
             self.visit_nodes_from(n, visited);
         }
+    }
+
+    pub fn groups(&self) -> Vec<u32> {
+        let mut groups = Vec::new();
+        let mut visited = HashSet::new();
+
+        for &n in self.nodes.keys() {
+            if visited.contains(&n) {
+                continue;
+            }
+
+            groups.push(n);
+
+            self.visit_nodes_from(n, &mut visited);
+        }
+
+        groups
     }
 }
 
@@ -104,5 +123,20 @@ mod tests {
         group.sort();
 
         assert_eq!(vec![0, 2, 3, 4, 5, 6], group);
+    }
+
+    #[test]
+    fn find_groups() {
+        let mut graph = Graph::new();
+
+        graph.add_node(0, &[2]);
+        graph.add_node(1, &[1]);
+        graph.add_node(2, &[0, 3, 4]);
+        graph.add_node(3, &[2, 4]);
+        graph.add_node(4, &[2, 3, 6]);
+        graph.add_node(5, &[6]);
+        graph.add_node(6, &[4, 5]);
+
+        assert_eq!(2, graph.groups().len());
     }
 }
