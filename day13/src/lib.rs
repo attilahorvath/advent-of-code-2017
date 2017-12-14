@@ -1,16 +1,18 @@
-use std::collections::HashMap;
-
 pub struct Firewall {
-    layers: HashMap<u32, Layer>,
+    layers: Vec<Option<Layer>>,
 }
 
 impl Firewall {
     pub fn new() -> Self {
-        Firewall { layers: HashMap::new() }
+        Firewall { layers: Vec::new() }
     }
 
-    pub fn add_layer(&mut self, depth: u32, range: u32) {
-        self.layers.insert(depth, Layer::new(range));
+    pub fn add_layer(&mut self, depth: usize, range: u32) {
+        while self.layers.len() < depth {
+            self.layers.push(None);
+        }
+
+        self.layers.push(Some(Layer::new(range)));
     }
 
     pub fn parse_layer(&mut self, s: &str) {
@@ -23,12 +25,12 @@ impl Firewall {
     }
 
     pub fn trip_severity(&self) -> u32 {
-        let steps = self.layers.keys().max().cloned().unwrap_or(0);
+        let steps = self.layers.len() as u32;
 
         let mut severity = 0;
 
-        for t in 0..(steps + 1) {
-            if let Some(l) = self.layers.get(&t) {
+        for t in 0..steps {
+            if let Some(ref l) = self.layers[t as usize] {
                 if l.scanner_hit(t) {
                     severity += t * l.range;
                 }
@@ -49,10 +51,10 @@ impl Firewall {
     }
 
     fn is_trip_safe(&self, delay: u32) -> bool {
-        let steps = self.layers.keys().max().cloned().unwrap_or(0);
+        let steps = self.layers.len() as u32;
 
-        for t in 0..(steps + 1) {
-            if let Some(l) = self.layers.get(&t) {
+        for t in 0..steps {
+            if let Some(ref l) = self.layers[t as usize] {
                 if l.scanner_hit(delay + t) {
                     return false;
                 }
