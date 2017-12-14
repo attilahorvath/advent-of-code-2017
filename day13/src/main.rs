@@ -15,4 +15,5 @@ fn main() {
     }
 
     println!("Severity of trip: {}", firewall.trip_severity());
+    println!("Delay needed for safe trip: {}", firewall.safe_trip_delay());
 }
