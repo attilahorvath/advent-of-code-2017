@@ -24,17 +24,42 @@ impl Firewall {
 
     pub fn trip_severity(&self) -> u32 {
         let steps = self.layers.keys().max().cloned().unwrap_or(0);
+
         let mut severity = 0;
 
-        for s in 0..(steps + 1) {
-            if let Some(l) = self.layers.get(&s) {
-                if l.scanner_position(s) == 0 {
-                    severity += s * l.range;
+        for t in 0..(steps + 1) {
+            if let Some(l) = self.layers.get(&t) {
+                if l.scanner_hit(t) {
+                    severity += t * l.range;
                 }
             }
         }
 
         severity
+    }
+
+    pub fn safe_trip_delay(&self) -> u32 {
+        let mut delay = 0;
+
+        while !self.is_trip_safe(delay) {
+            delay += 1;
+        }
+
+        delay
+    }
+
+    fn is_trip_safe(&self, delay: u32) -> bool {
+        let steps = self.layers.keys().max().cloned().unwrap_or(0);
+
+        for t in 0..(steps + 1) {
+            if let Some(l) = self.layers.get(&t) {
+                if l.scanner_hit(delay + t) {
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 }
 
@@ -47,14 +72,8 @@ impl Layer {
         Layer { range }
     }
 
-    fn scanner_position(&self, t: u32) -> u32 {
-        let position = t % ((self.range - 1) * 2);
-
-        if position > self.range - 1 {
-            (self.range - 1) * 2 - position
-        } else {
-            position
-        }
+    fn scanner_hit(&self, t: u32) -> bool {
+        t % ((self.range - 1) * 2) == 0
     }
 }
 
@@ -72,5 +91,17 @@ mod tests {
         firewall.add_layer(6, 4);
 
         assert_eq!(24, firewall.trip_severity());
+    }
+
+    #[test]
+    fn calculate_delay_for_safe_trip() {
+        let mut firewall = Firewall::new();
+
+        firewall.add_layer(0, 3);
+        firewall.add_layer(1, 2);
+        firewall.add_layer(4, 4);
+        firewall.add_layer(6, 4);
+
+        assert_eq!(10, firewall.safe_trip_delay());
     }
 }
