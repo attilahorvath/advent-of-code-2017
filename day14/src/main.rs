@@ -13,5 +13,8 @@ fn main() {
         "error reading file",
     );
 
-    println!("Used squares: {}", used_squares(&contents.trim()));
+    let grid = Grid::new(&contents.trim());
+
+    println!("Used squares: {}", grid.used_squares());
+    println!("Regions: {}", grid.regions());
 }
