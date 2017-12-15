@@ -31,5 +31,5 @@ fn main() {
 
     let judge = Judge::new(generator_a_previous, generator_b_previous);
 
-    println!("Matches found: {}", judge.count_matches(40_000_000));
+    println!("Matches found: {}", judge.count_matches(5_000_000));
 }
