@@ -67,8 +67,8 @@ impl Dance {
         Dance { programs }
     }
 
-    pub fn step(&mut self, dance_move: DanceMove) {
-        match dance_move {
+    pub fn step(&mut self, dance_move: &DanceMove) {
+        match *dance_move {
             DanceMove::Spin(size) => {
                 let len = self.programs.len();
 
@@ -95,6 +95,26 @@ impl Dance {
     pub fn order(&self) -> String {
         self.programs.iter().collect()
     }
+
+    pub fn order_after(&mut self, dance_moves: &[DanceMove], rounds: usize) -> String {
+        let mut history = Vec::new();
+
+        for i in 0..rounds {
+            for dance_move in dance_moves {
+                self.step(dance_move);
+            }
+
+            let order = self.order();
+
+            if history.get(0).unwrap_or(&String::new()) == &order {
+                return history[(rounds - 1) % i].clone();
+            } else {
+                history.push(order);
+            }
+        }
+
+        self.order()
+    }
 }
 
 #[cfg(test)]
@@ -105,10 +125,26 @@ mod tests {
     fn test_dance_moves() {
         let mut dance = Dance::new(5);
 
-        dance.step(DanceMove::Spin(1));
-        dance.step(DanceMove::Exchange(3, 4));
-        dance.step(DanceMove::Partner('e', 'b'));
+        dance.step(&DanceMove::Spin(1));
+        dance.step(&DanceMove::Exchange(3, 4));
+        dance.step(&DanceMove::Partner('e', 'b'));
 
         assert_eq!("baedc".to_string(), dance.order());
+    }
+
+    #[test]
+    fn test_whole_dance() {
+        let mut dance = Dance::new(5);
+
+        let order = dance.order_after(
+            &[
+                DanceMove::Spin(1),
+                DanceMove::Exchange(3, 4),
+                DanceMove::Partner('e', 'b'),
+            ],
+            1_000_000_000,
+        );
+
+        assert_eq!("abcde".to_string(), order);
     }
 }

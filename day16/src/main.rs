@@ -15,10 +15,13 @@ fn main() {
 
     let mut dance = Dance::new(16);
 
-    for dance_move in contents.split(',') {
-        //println!("{}", dance_move);
-        dance.step(dance_move.parse().expect("unable to parse dance move"));
-    }
+    let dance_moves = contents
+        .split(',')
+        .map(|s| s.parse().expect("unable to parse dance move"))
+        .collect::<Vec<_>>();
 
-    println!("Final order: {}", dance.order());
+    println!(
+        "Final order: {}",
+        dance.order_after(&dance_moves, 1_000_000_000)
+    );
 }
