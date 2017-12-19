@@ -16,4 +16,9 @@ fn main() {
     let mut spinlock = Spinlock::new(contents.trim().parse().expect("invalid value"));
 
     println!("Value after latest: {}", spinlock.value_after_latest(2017));
+
+    println!(
+        "Value after zero: {}",
+        spinlock.value_after_zero(50_000_000)
+    );
 }

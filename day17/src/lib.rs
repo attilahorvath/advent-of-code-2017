@@ -37,6 +37,21 @@ impl Spinlock {
             .cloned()
             .unwrap_or(0)
     }
+
+    pub fn value_after_zero(&self, spins: u32) -> u32 {
+        let mut position = 0;
+        let mut value = 0;
+
+        for i in 1..(spins + 1) {
+            position = (position + self.steps as u32) % i + 1;
+
+            if position == 1 {
+                value = i;
+            }
+        }
+
+        value
+    }
 }
 
 #[cfg(test)]
@@ -71,5 +86,15 @@ mod tests {
     #[test]
     fn get_value_after_latest() {
         assert_eq!(638, Spinlock::new(3).value_after_latest(2017));
+    }
+
+    #[test]
+    fn get_value_after_zero_with_nine_spins() {
+        assert_eq!(9, Spinlock::new(3).value_after_zero(9));
+    }
+
+    #[test]
+    fn get_value_after_zero_with_2017_spins() {
+        assert_eq!(1226, Spinlock::new(3).value_after_zero(2017));
     }
 }
