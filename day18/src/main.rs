@@ -16,7 +16,10 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    let mut vm = Vm::new(&instructions);
+    let mut vm = Vm::new();
 
-    println!("Recovered frequency: {}", vm.execute());
+    vm.init_program(&instructions);
+    vm.init_program(&instructions);
+
+    println!("Values sent by PID 1: {}", vm.execute());
 }

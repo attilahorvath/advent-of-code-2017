@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::thread;
+use std::sync::mpsc;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -14,7 +17,7 @@ pub enum Instruction {
     Add(char, Value),
     Mul(char, Value),
     Mod(char, Value),
-    Rcv(Value),
+    Rcv(char),
     Jgz(Value, Value),
 }
 
@@ -84,9 +87,11 @@ impl FromStr for Instruction {
                 ))
             }
             Some("rcv") => {
-                let v = parts.next().ok_or(InstructionParseError)?;
+                let n = parts.next().ok_or(InstructionParseError)?;
 
-                Ok(Instruction::Rcv(v.parse()?))
+                Ok(Instruction::Rcv(
+                    n.chars().next().ok_or(InstructionParseError)?,
+                ))
             }
             Some("jgz") => {
                 let v = parts.next().ok_or(InstructionParseError)?;
@@ -99,30 +104,50 @@ impl FromStr for Instruction {
     }
 }
 
-pub struct Vm {
+pub struct Program {
+    pid: usize,
     registers: HashMap<char, i64>,
     instructions: Vec<Instruction>,
     pc: i64,
+    receiver: mpsc::Receiver<i64>,
+    senders: HashMap<usize, mpsc::Sender<i64>>,
 }
 
-impl Vm {
-    pub fn new(instructions: &[Instruction]) -> Self {
-        Vm {
-            registers: HashMap::new(),
+impl Program {
+    pub fn new(pid: usize, instructions: &[Instruction]) -> Self {
+        let mut registers = HashMap::new();
+        registers.insert('p', pid as i64);
+
+        let (own_sender, receiver) = mpsc::channel();
+
+        let mut senders = HashMap::new();
+        senders.insert(pid, own_sender);
+
+        Program {
+            pid,
+            registers,
             instructions: instructions.to_vec(),
             pc: 0,
+            receiver,
+            senders,
         }
     }
 
-    pub fn execute(&mut self) -> i64 {
-        let mut last_frequency = 0;
+    pub fn execute(&mut self) -> u32 {
+        let mut values_sent = 0;
 
         loop {
             let mut pc_updated = false;
 
             match self.instructions[self.pc as usize] {
                 Instruction::Snd(ref value) => {
-                    last_frequency = self.get_value(value);
+                    let v = self.get_value(value);
+
+                    for (_, sender) in self.senders.iter().filter(|&(pid, _)| pid != &self.pid) {
+                        sender.send(v).unwrap();
+                    }
+
+                    values_sent += 1;
                 }
                 Instruction::Set(name, ref value) => {
                     let v = self.get_value(value);
@@ -140,9 +165,11 @@ impl Vm {
                     let v = self.get_value(value);
                     *self.registers.entry(name).or_insert(0) %= v;
                 }
-                Instruction::Rcv(ref value) => {
-                    if self.get_value(value) != 0 {
-                        return last_frequency;
+                Instruction::Rcv(name) => {
+                    if let Ok(v) = self.receiver.recv_timeout(Duration::from_secs(1)) {
+                        *self.registers.entry(name).or_insert(0) = v;
+                    } else {
+                        return values_sent;
                     }
                 }
                 Instruction::Jgz(ref value, ref offset) => {
@@ -161,7 +188,7 @@ impl Vm {
             }
 
             if self.pc < 0 || self.pc >= self.instructions.len() as i64 {
-                return last_frequency;
+                return values_sent;
             }
         }
     }
@@ -172,6 +199,47 @@ impl Vm {
             Value::Number(number) => number,
         }
     }
+
+    pub fn own_sender(&self) -> &mpsc::Sender<i64> {
+        self.senders.get(&self.pid).unwrap()
+    }
+}
+
+pub struct Vm {
+    programs: Vec<Program>,
+}
+
+impl Vm {
+    pub fn new() -> Self {
+        Vm { programs: Vec::new() }
+    }
+
+    pub fn init_program(&mut self, instructions: &[Instruction]) {
+        let mut program = Program::new(self.programs.len(), instructions);
+
+        for p in self.programs.iter_mut() {
+            p.senders.insert(program.pid, program.own_sender().clone());
+            program.senders.insert(p.pid, p.own_sender().clone());
+        }
+
+        self.programs.push(program);
+    }
+
+    pub fn execute(self) -> u32 {
+        let mut handles = Vec::new();
+
+        for mut p in self.programs {
+            handles.push(thread::spawn(move || p.execute()));
+        }
+
+        let mut values_sent = 0;
+
+        for handle in handles {
+            values_sent = handle.join().unwrap();
+        }
+
+        values_sent
+    }
 }
 
 #[cfg(test)]
@@ -179,22 +247,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_last_frequency() {
-        let mut vm = Vm::new(
-            &[
-                Instruction::Set('a', Value::Number(1)),
-                Instruction::Add('a', Value::Number(2)),
-                Instruction::Mul('a', Value::Register('a')),
-                Instruction::Mod('a', Value::Number(5)),
-                Instruction::Snd(Value::Register('a')),
-                Instruction::Set('a', Value::Number(0)),
-                Instruction::Rcv(Value::Register('a')),
-                Instruction::Jgz(Value::Register('a'), Value::Number(-1)),
-                Instruction::Set('a', Value::Number(1)),
-                Instruction::Jgz(Value::Register('a'), Value::Number(-2)),
-            ],
-        );
+    fn get_values_sent_by_last_program() {
+        let instructions = [
+            Instruction::Snd(Value::Number(1)),
+            Instruction::Snd(Value::Number(2)),
+            Instruction::Snd(Value::Register('p')),
+            Instruction::Rcv('a'),
+            Instruction::Rcv('b'),
+            Instruction::Rcv('c'),
+            Instruction::Rcv('d'),
+        ];
 
-        assert_eq!(4, vm.execute());
+        let mut vm = Vm::new();
+
+        vm.init_program(&instructions);
+        vm.init_program(&instructions);
+
+        assert_eq!(3, vm.execute());
     }
 }
