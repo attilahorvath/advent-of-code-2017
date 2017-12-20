@@ -65,23 +65,17 @@ impl Particle {
         }
     }
 
-    fn step(&mut self) {
-        self.velocity = (
-            self.velocity.0 + self.acceleration.0,
-            self.velocity.1 + self.acceleration.1,
-            self.velocity.2 + self.acceleration.2,
-        );
-
-        self.position = (
-            self.position.0 + self.velocity.0,
-            self.position.1 + self.velocity.1,
-            self.position.2 + self.velocity.2,
-        );
+    fn position_at(&self, time: i64) -> (i64, i64, i64) {
+        (
+            self.position.0 + self.velocity.0 * time + time * (time + 1) / 2 * self.acceleration.0,
+            self.position.1 + self.velocity.1 * time + time * (time + 1) / 2 * self.acceleration.1,
+            self.position.2 + self.velocity.2 * time + time * (time + 1) / 2 * self.acceleration.2,
+        )
     }
+}
 
-    fn distance_from_origin(&self) -> u64 {
-        self.position.0.abs() as u64 + self.position.1.abs() as u64 + self.position.2.abs() as u64
-    }
+fn distance_from_origin((x, y, z): (i64, i64, i64)) -> u64 {
+    x.abs() as u64 + y.abs() as u64 + z.abs() as u64
 }
 
 pub struct ParticleSystem {
@@ -97,27 +91,13 @@ impl ParticleSystem {
         self.particles.push(particle);
     }
 
-    pub fn find_closest(&mut self) -> usize {
-        for _ in 0..100_000 {
-            self.step();
-        }
-
-        self.closest_to_origin()
-    }
-
-    fn closest_to_origin(&self) -> usize {
+    pub fn closest_to_origin(&self) -> usize {
         self.particles
             .iter()
             .enumerate()
-            .min_by_key(|&(_, p)| p.distance_from_origin())
+            .min_by_key(|&(_, p)| distance_from_origin(p.position_at(10_000)))
             .unwrap()
             .0
-    }
-
-    fn step(&mut self) {
-        for particle in self.particles.iter_mut() {
-            particle.step();
-        }
     }
 }
 
@@ -132,6 +112,6 @@ mod tests {
         particle_system.add_particle(Particle::new((3, 0, 0), (2, 0, 0), (-1, 0, 0)));
         particle_system.add_particle(Particle::new((4, 0, 0), (0, 0, 0), (-2, 0, 0)));
 
-        assert_eq!(0, particle_system.find_closest());
+        assert_eq!(0, particle_system.closest_to_origin());
     }
 }
