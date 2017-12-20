@@ -19,5 +19,8 @@ fn main() {
         map.add_row(&row);
     }
 
-    println!("Letters along the path: {}", map.find_path());
+    let (letters, steps) = map.find_path();
+
+    println!("Letters along the path: {}", letters);
+    println!("Steps needed: {}", steps);
 }

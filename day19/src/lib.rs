@@ -72,31 +72,33 @@ impl Map {
         self.tiles.push(tiles.to_vec());
     }
 
-    pub fn find_path(&mut self) -> String {
+    pub fn find_path(&mut self) -> (String, u32) {
         self.position.0 = self.tiles[0]
             .iter()
             .position(|i| *i == Tile::Vertical)
             .unwrap() as i32;
 
         let mut letters = String::new();
+        let mut steps = 0;
 
         loop {
             self.position = self.next_step();
+            steps += 1;
 
             match self.get_tile(self.position) {
-                Tile::Empty => return letters,
+                Tile::Empty => break,
                 Tile::Horizontal => {
                     if self.direction.is_vertical() &&
                         !self.get_tile(self.next_step()).is_vertical_or_letter()
                     {
-                        return letters;
+                        break;
                     }
                 }
                 Tile::Vertical => {
                     if self.direction.is_horizontal() &&
                         !self.get_tile(self.next_step()).is_horizontal_or_letter()
                     {
-                        return letters;
+                        break;
                     }
                 }
                 Tile::Turn => {
@@ -110,7 +112,7 @@ impl Map {
                         {
                             Direction::Down
                         } else {
-                            return letters;
+                            break;
                         }
                     } else {
                         if self.get_tile(self.next_in_direction(&Direction::Left))
@@ -122,13 +124,15 @@ impl Map {
                         {
                             Direction::Right
                         } else {
-                            return letters;
+                            break;
                         }
                     };
                 }
                 Tile::Letter(l) => letters.push(l),
             }
         }
+
+        (letters, steps)
     }
 
     fn next_step(&self) -> (i32, i32) {
@@ -160,7 +164,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn find_letters() {
+    fn find_letters_and_steps() {
         let mut map = Map::new();
 
         for row in [
@@ -176,6 +180,6 @@ mod tests {
             map.add_row(&row.chars().map(|c| c.into()).collect::<Vec<_>>());
         }
 
-        assert_eq!("ABCDEF", map.find_path());
+        assert_eq!(("ABCDEF".to_string(), 38), map.find_path());
     }
 }
