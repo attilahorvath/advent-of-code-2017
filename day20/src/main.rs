@@ -20,6 +20,6 @@ fn main() {
 
     println!(
         "Particle eventually closest to origin: {}",
-        particle_system.find_closest()
+        particle_system.closest_to_origin()
     );
 }
