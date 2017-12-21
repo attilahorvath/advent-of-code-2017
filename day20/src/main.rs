@@ -22,4 +22,6 @@ fn main() {
         "Particle eventually closest to origin: {}",
         particle_system.closest_to_origin()
     );
+
+    particle_system.resolve_collisions();
 }
